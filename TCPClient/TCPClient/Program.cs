@@ -8,50 +8,52 @@ namespace TCPClient
     {
         static void Main(string[] args)
         {
+            // Loop infinitely to keep the connection alive
             while (true)
             {
                 try
                 {
-                    // Connect to the server
-                    TcpClient client = new TcpClient("IP OF TCP Server", 1252);
-
-                    // Get the client's network stream
-                    NetworkStream stream = client.GetStream();
-
-                    // Send the "keep alive" message
-                    byte[] message = Encoding.ASCII.GetBytes("keep alive");
-                    stream.Write(message, 0, message.Length);
-
-                    // Read the response from the server with a timeout
-                    int timeout = 1000; // timeout in milliseconds
-                    stream.ReadTimeout = timeout;
-                    byte[] response = new byte[1024];
-                    int bytesRead = stream.Read(response, 0, response.Length);
-                    string responseMessage = Encoding.ASCII.GetString(response, 0, bytesRead);
-
-                    // Check if the response is "ack"
-                    if (responseMessage.Trim() != "ack")
+                    using (TcpClient client = new TcpClient("TCP SERVER IP", 1252))
                     {
-                        Console.WriteLine("Received invalid response: " + responseMessage);
-                        Environment.Exit(0);
+                        using (NetworkStream stream = client.GetStream())
+                        {
+                            // Prepare and send the "keep alive" message as a byte array
+                            byte[] message = Encoding.ASCII.GetBytes("keep alive");
+                            stream.Write(message, 0, message.Length);
+
+                            // Set the timeout for reading the response from the server
+                            int timeout = 1000; // timeout in milliseconds
+                            stream.ReadTimeout = timeout;
+
+                            // Read the response from the server into a byte array
+                            byte[] response = new byte[4]; // Change the size to the minimum required for "ack" message
+                            int bytesRead = stream.Read(response, 0, response.Length);
+
+                            // Convert the response byte array into a string
+                            string responseMessage = Encoding.ASCII.GetString(response, 0, bytesRead);
+
+                            // Check if the response message is "ack"
+                            if (responseMessage.Trim() != "ack")
+                            {
+                                Console.WriteLine("Received invalid response: " + responseMessage);
+                                Environment.Exit(0);
+                            }
+
+                            // Print the received response
+                            Console.WriteLine("Received response: " + responseMessage);
+                        }
                     }
-
-                    // Handle the response as needed
-                    Console.WriteLine("Received response: " + responseMessage);
-
-                    // Close the client
-                    client.Close();
                 }
                 catch (Exception ex)
                 {
+                    // Print the error message if connection to the server fails
                     Console.WriteLine("Failed to connect to server: " + ex.Message);
                     Environment.Exit(0);
                 }
 
-                // Wait before attempting to connect again
+                // Wait for 1 second before attempting to connect again
                 System.Threading.Thread.Sleep(1000);
             }
         }
     }
 }
-
