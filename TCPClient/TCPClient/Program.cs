@@ -9,7 +9,7 @@ namespace TCPClient
     {
         private static void Main()
         {
-            using (var client = new TcpClient())
+            using (var client = new System.Net.Sockets.TcpClient())
             {
                 try
                 {
